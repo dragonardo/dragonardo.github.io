@@ -1,0 +1,142 @@
+<title>List</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.2/angular.js"></script>
+<style>
+	body {
+		background: black;
+		color: white;
+		margin: 0;
+	}
+
+	body>div {
+		white-space: nowrap;
+	}
+
+	#input{
+		width: 500px;
+	}
+
+	#suggestions span{
+		border: 1px solid white;
+		margin: 5px;
+		padding: 1px 5px;
+		cursor: pointer;
+	}
+
+	#grid {
+		display: grid;
+		height: calc(100% - 21px);
+		grid-template-columns: repeat(5, 20%);
+		grid-template-rows: repeat(5, 20%);
+		align-items: center;
+		justify-items: center;
+		align-content: space-between;
+		white-space: nowrap;
+	}
+
+	#grid div {
+		border: 2px solid transparent;
+		box-sizing: border-box;
+		position: relative;
+	}
+
+	#grid div.animated {
+		border-style: dashed;
+		border-color: grey;
+	}
+
+	#grid div.old:after {
+		content: 'OLD';
+		font-family: impact, monospace;
+		position: absolute;
+		font-size: 100px;
+		top: 0;
+		color: red;
+		left: calc(50% - 1.5ch);
+		opacity: 0.5;
+	}
+
+	#grid div.old img {
+		filter: grayscale(1);
+	}
+
+	#grid div.selected {
+		border-color: #00ff00 !important;
+	}
+
+</style>
+<script>
+	var app = angular.module("myApp", []);
+	app.controller('MainController', ['$scope', '$http', '$location', function ($scope, $http, $location) {
+		$scope.safeApply = function (fn) {
+			var phase = this.$root.$$phase;
+			if (phase == '$apply' || phase == '$digest') { if (fn && (typeof (fn) === 'function')) { fn() } } else { this.$apply(fn) }
+		};
+
+		params = $location.search();
+		$scope.search = params.search ? `${params.search} ` : "";
+
+		$scope.filter = " -my_little_pony -male/male -futa_on_male -futa_with_male -yaoi -pegging -gore -scat -fart -yaboi-art -diaper -guro -peeing -ai_generated";
+
+		$scope.pid = 0;
+		$scope.fetch = async () => {
+			await $http.get(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=25&tags=${$scope.search + $scope.filter}&pid=${$scope.pid}`)
+				.then(res => {
+					$scope.result = res.data;
+					$scope.safeApply();
+				})
+		}
+		$scope.fetch($scope.search, 0);
+
+		$scope.autocomplete = async () => {
+			word = $scope.search.match(/[^\s]+$/);
+			if(word){
+				$scope.word = word[0];
+				await $http.get(`https://api.rule34.xxx/autocomplete.php?q=${word[0]}`)
+				.then(res =>{
+					$scope.options = res.data;
+					$scope.safeApply();
+				})
+			}
+		}
+
+		$scope.suggest = (word) => {
+			$scope.options = [];
+			$scope.search = $scope.search.replace($scope.word,`${word} `);
+			document.querySelector("input").focus()
+			$scope.safeApply();
+		}
+
+		$scope.prev = () => {
+			if($scope.pid > 0){
+				$scope.pid--;
+				$scope.fetch()
+			}
+		}
+
+		$scope.next = () => {
+			$scope.pid++;
+			$scope.fetch();
+		}
+
+
+		window.scope = $scope;
+	}]);
+</script>
+
+<body ng-app="myApp">
+	<div ng-controller="MainController">
+		<form>
+			<input ng-model="search" ng-keyup="autocomplete()"  ng-trim="false" id="input">
+			<input type="submit" ng-click="fetch()" value="Search">
+			<button ng-click="prev()"><</button> {{pid}} <button ng-click="next()">></button> 
+			<div id="suggestions">
+				<span ng-repeat="option in options" ng-click="suggest(option.value)">{{option.label}}</span>
+			</div>
+		</form>
+		<div id="grid">
+			<a ng-repeat="post in result" href="view.html#!/?id={{post.id}}&directory={{post.directory}}&image={{post.image}}&tags={{post.tags}}">
+				<img ng-src="{{post.preview_url}}" data-index={{$index}} data-id="{{post.id}}">
+			</div>
+		</div>
+	</div>
+</body>

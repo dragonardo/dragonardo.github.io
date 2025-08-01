@@ -1,0 +1,81 @@
+<title>View</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.2/angular.js"></script>
+<style>
+	body {
+		background: black;
+		color: white;
+		margin: 0;
+	}
+
+	body>div {
+		white-space: nowrap;
+	}
+
+	#sidebar {
+		position: absolute;
+		overflow-y: scroll;
+		max-height: 100%;
+		z-index: 1;
+	}
+
+	#sidebar a {
+		display: block;
+		color: white;
+		text-decoration: none;
+	}
+
+	#sidebar::-webkit-scrollbar {
+		display: none;
+	}
+
+	#display {
+		/* position: relative; */
+		width: 100%;
+		height: 100%;
+		display: flex;
+		z-index: 2;
+	}
+
+	#display img,
+	#display video {
+		max-width: 99%;
+		max-height: 99%;
+		margin: auto;
+		cursor: crosshair;
+	}
+</style>
+<script>
+	var app = angular.module("myApp", []);
+	app.controller('MainController', ['$scope', '$http', '$location', function ($scope, $http, $location) {
+		$scope.safeApply = function (fn) {
+			var phase = this.$root.$$phase;
+			if (phase == '$apply' || phase == '$digest') { if (fn && (typeof (fn) === 'function')) { fn() } } else { this.$apply(fn) }
+		};
+
+		$scope.extensionRegex = /\.(\w+)$/;
+
+		params = $location.search();
+		$scope.id = params.id;
+		directory = params.directory;
+		image = params.image;
+		cdn = image.match(/(\.mp4|\.webm)$/) ? 'cdn-mp4' : 'cdn';
+		$scope.file_url = `https://api-${cdn}.rule34.xxx/images/${directory}/${image}`
+
+		$scope.tags = params.tags.split(" ");
+
+		window.scope = $scope;
+	}]);
+</script>
+
+<body ng-app="myApp">
+	<div ng-controller="MainController">
+		<div id="sidebar">
+			<a ng-repeat="tag in tags track by $index" href="list.html#!/?search={{tag}}">{{tag}}</a>
+		</div>
+		<div id="display" ng-switch="file_url.match(extensionRegex)[1]">
+			<img ng-switch-when="png|jpg|jpeg|gif" ng-switch-when-separator="|" ng-src="{{file_url}}" />
+			<video ng-switch-when="mp4|webm" ng-switch-when-separator="|" ng-src="{{file_url}}" autoplay muted controls loop></video>
+			<span ng-switch-default>{{file_url.match(extensionRegex)[1]}} not yet implemented</span>
+		</div>
+	</div>
+</body>

@@ -52,18 +52,18 @@
 		white-space: nowrap;
 	}
 
-	#grid div {
+	#grid a {
 		border: 2px solid transparent;
 		box-sizing: border-box;
 		position: relative;
 	}
 
-	#grid div.animated {
+	#grid a.animated {
 		border-style: dashed;
 		border-color: grey;
 	}
 
-	#grid div.old:after {
+	#grid a.old:after {
 		content: 'OLD';
 		font-family: impact, monospace;
 		position: absolute;
@@ -74,11 +74,11 @@
 		opacity: 0.5;
 	}
 
-	#grid div.old img {
+	#grid a.old img {
 		filter: grayscale(1);
 	}
 
-	#grid div.selected {
+	#grid a.selected {
 		border-color: #00ff00 !important;
 	}
 
@@ -231,7 +231,9 @@
 					$scope.updateDisplay();
 					break;
 				case "e":
-					$scope.open($scope.display.id);
+					// $scope.open($scope.display.id);
+					href=`view.html#!/?id=${$scope.display.id}&directory=${$scope.display.directory}&image=${$scope.display.image}&tags=${$scope.display.tags}`
+					window.open(href);
 					break;
 				case "W":
 					if ($scope.currentPid - 1 < 0) { return }
@@ -285,9 +287,9 @@
 				</span>
 			</div>
 			<div id="grid">
-				<div ng-repeat="post in currentPage" class="{{$index == currentIndex ? 'selected' : null }} {{post.tags.includes('animated') ? 'animated' : null}} {{post.id <= pages[currentSearch].history ? 'old' : null}}">
-					<img ng-src="{{post.preview_url}}" data-index={{$index}} data-id="{{post.id}}" ng-mousedown="click($event,post,$index)">
-				</div>
+				<a ng-repeat="post in currentPage" class="{{$index == currentIndex ? 'selected' : null }} {{post.tags.includes('animated') ? 'animated' : null}} {{post.id <= pages[currentSearch].history ? 'old' : null}}" href="view.html#!/?id={{post.id}}&directory={{post.directory}}&image={{post.image}}&tags={{post.tags}}">
+					<img ng-src="{{post.preview_url}}" data-index={{$index}} data-id="{{post.id}}">
+				</a>
 			</div>
 		</div>
 		<div id="right">
