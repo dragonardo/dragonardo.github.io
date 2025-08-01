@@ -287,7 +287,7 @@
 				</span>
 			</div>
 			<div id="grid">
-				<a ng-repeat="post in currentPage" class="{{$index == currentIndex ? 'selected' : null }} {{post.tags.includes('animated') ? 'animated' : null}} {{post.id <= pages[currentSearch].history ? 'old' : null}}" href="view.html#!/?id={{post.id}}&directory={{post.directory}}&image={{post.image}}&tags={{post.tags}}">
+				<a ng-repeat="post in currentPage" class="{{$index == currentIndex ? 'selected' : null }} {{post.tags.includes('animated') ? 'animated' : null}} {{post.id <= pages[currentSearch].history ? 'old' : null}}" href="view.html#!/?id={{post.id}}&directory={{post.directory}}&image={{post.image}}&tags={{post.tags}}" target="_blank">
 					<img ng-src="{{post.preview_url}}" data-index={{$index}} data-id="{{post.id}}">
 				</a>
 			</div>
@@ -301,4 +301,5 @@
 			<div id="footer">{{display.change + '000' | date}} {{display.tags}}</div>
 		</div>
 	</div>
+
 </body>
