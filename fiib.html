@@ -1,0 +1,302 @@
+<title>FIIB</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.2/angular.js"></script>
+<style>
+	body {
+		background: black;
+		color: white;
+		margin: 0;
+	}
+
+	body>div {
+		white-space: nowrap;
+	}
+
+	#left,
+	#right {
+		width: 50%;
+		height: 100%;
+		box-sizing: border-box;
+		display: inline-block;
+		position: fixed;
+		top: 0;
+	}
+
+	#left {
+		left: 0;
+	}
+
+	#right {
+		right: 0;
+		background: grey;
+	}
+
+	#header {
+		width: 100%;
+		height: 20px;
+	}
+
+	#header>span {
+		display: inline-block;
+		width: 100%;
+		text-align: center;
+	}
+
+	#grid {
+		display: grid;
+		height: calc(100% - 21px);
+		grid-template-columns: repeat(5, 20%);
+		grid-template-rows: repeat(5, 20%);
+		align-items: center;
+		justify-items: center;
+		align-content: space-between;
+		white-space: nowrap;
+	}
+
+	#grid div {
+		border: 2px solid transparent;
+		box-sizing: border-box;
+		position: relative;
+	}
+
+	#grid div.animated {
+		border-style: dashed;
+		border-color: grey;
+	}
+
+	#grid div.old:after {
+		content: 'OLD';
+		font-family: impact, monospace;
+		position: absolute;
+		font-size: 100px;
+		top: 0;
+		color: red;
+		left: calc(50% - 1.5ch);
+		opacity: 0.5;
+	}
+
+	#grid div.old img {
+		filter: grayscale(1);
+	}
+
+	#grid div.selected {
+		border-color: #00ff00 !important;
+	}
+
+	#display {
+		width: 100%;
+		height: 100%;
+		display: flex;
+	}
+
+	#display img,
+	#display video {
+		max-width: 99%;
+		max-height: 99%;
+		margin: auto;
+		cursor: crosshair;
+	}
+
+	#footer {
+		position: fixed;
+		bottom: 0;
+		text-wrap: wrap;
+		pointer-events: none;
+		opacity: 0.5;
+	}
+</style>
+<script>
+	var app = angular.module("myApp", []);
+	app.controller('MainController', ['$scope', '$http', function ($scope, $http) {
+		$scope.safeApply = function (fn) {
+			var phase = this.$root.$$phase;
+			if (phase == '$apply' || phase == '$digest') { if (fn && (typeof (fn) === 'function')) { fn() } } else { this.$apply(fn) }
+		};
+
+		$scope.searches = [
+			"d-art",
+			"( sfan ~ coffeesquirrel )",
+			"neocoill",
+			"afrobull",
+			// "the_simpsons",
+			// "futurama",
+			// "family_guy",
+			// "american_dad",
+			// "harry_potter",
+			// "kono_subarashii_sekai_ni_shukufuku_wo!",
+			// "chainsaw_man",
+			// "one*punch*man",
+			// "neon_genesis_evangelion",
+			// "sousou_no_frieren",
+			"zenless_zone_zero",
+			"dandadan",
+			"senran_kagura",
+			// "kimetsu_no_yaiba",
+			"( my_hero_academia ~ boku_no_hero_academia )",
+			// "naruto",
+			"one_piece",
+		];
+		$scope.filter = " -my_little_pony -male/male -futa_on_male -futa_with_male -yaoi -pegging -gore -scat -fart -yaboi-art -diaper -guro -peeing -ai_generated";
+		$scope.pages = Object.fromEntries($scope.searches.map(search => { return [search, { history: NaN, subpages: [] }] }));
+		$scope.currentSearch = "";
+		$scope.currentPid = 0;
+		$scope.currentPage = [];
+		$scope.currentIndex = 0;
+
+		$scope.display = {};
+
+		$scope.extensionRegex = /\.(\w+)$/;
+
+		$scope.updateDisplay = () => {
+			$scope.display = $scope.pages[$scope.currentSearch].subpages[$scope.currentPid][$scope.currentIndex];
+			$scope.safeApply();
+		}
+
+		$scope.loadPage = (search, pid, index = 0) => {
+			$scope.currentSearch = search;
+			$scope.currentPid = pid;
+			$scope.currentPage = $scope.pages[search].subpages[pid];
+			$scope.currentIndex = index;
+			$scope.updateDisplay();
+		}
+
+		$scope.pageSize = 25;
+		$scope.fetch = async (search, pid) => {
+			await $http.get(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=${$scope.pageSize}&tags=${search + $scope.filter}&pid=${pid}`)
+				.then(res => {
+					$scope.pages[search].subpages.push(res.data);
+					$scope.pages[search].history = Number(localStorage.getItem(search));
+					$scope.loadPage(search, pid)
+				})
+		}
+
+		$scope.fetch($scope.searches[0], 0);
+
+		$scope.open = (id) => {
+			window.open(`https://rule34.xxx/index.php?page=post&s=view&id=${id}`);
+		}
+
+		$scope.click = ($event, post, index) => {
+			switch ($event.button) {
+				case 0:
+					$scope.currentIndex = index;
+					$scope.updateDisplay()
+					break;
+				case 1:
+					$scope.open(post.id)
+					break;
+			}
+		}
+
+		$scope.saveToLocalStorage = () => {
+			var oldId = Number(localStorage.getItem($scope.currentSearch));
+			var newId = $scope.pages[$scope.currentSearch].subpages[0][0].id
+			localStorage.setItem($scope.currentSearch, newId);
+			$scope.pages[$scope.currentSearch].history = newId;
+			$scope.safeApply();
+			console.log(`Updating ${$scope.currentSearch} from ${oldId} to ${newId}`);
+		}
+
+		$scope.resetLocalStorage = () => {
+			var oldId = Number(localStorage.getItem($scope.currentSearch));
+			var newId = 0;
+			localStorage.setItem($scope.currentSearch, newId);
+			$scope.pages[$scope.currentSearch].history = newId;
+			$scope.safeApply();
+			console.log(`Updating ${$scope.currentSearch} from ${oldId} to ${newId}`);
+		}
+
+
+		addEventListener('keypress', (e) => {
+			// console.log(e.key);
+			if (!["w", "a", "s", "d", "W", "A", "S", "D", "q", "Q", "e"].includes(e.key)) { return }
+			switch (e.key) {
+				case "w":
+					if ($scope.currentIndex - 5 < 0) { return }
+					$scope.currentIndex -= 5;
+					$scope.updateDisplay();
+					break;
+				case "a":
+					if ($scope.currentIndex - 1 < 0) { return }
+					$scope.currentIndex--;
+					$scope.updateDisplay();
+					break;
+				case "s":
+					if ($scope.currentIndex + 5 >= $scope.pageSize) { return }
+					$scope.currentIndex += 5;
+					$scope.updateDisplay();
+					break;
+				case "d":
+					if ($scope.currentIndex + 1 >= $scope.pageSize) { return }
+					$scope.currentIndex++;
+					$scope.updateDisplay();
+					break;
+				case "e":
+					$scope.open($scope.display.id);
+					break;
+				case "W":
+					if ($scope.currentPid - 1 < 0) { return }
+					$scope.loadPage($scope.currentSearch, $scope.currentPid - 1, 24)
+					break;
+				case "A":
+					var searchIndex = $scope.searches.indexOf($scope.currentSearch);
+					if (searchIndex - 1 < 0) { return }
+					var nextSearch = $scope.searches[searchIndex - 1];
+					$scope.loadPage(nextSearch, 0);
+					break;
+				case "S":
+					if ($scope.pages[$scope.currentSearch].subpages[$scope.currentPid + 1] != undefined) {
+						$scope.loadPage($scope.currentSearch, $scope.currentPid + 1)
+					} else {
+						$scope.fetch($scope.currentSearch, $scope.currentPid + 1)
+					}
+					break;
+				case "D":
+					var searchIndex = $scope.searches.indexOf($scope.currentSearch);
+					if (searchIndex + 1 >= $scope.searches.length) { return }
+					var nextSearch = $scope.searches[searchIndex + 1];
+					if ($scope.pages[nextSearch].subpages.length == 0) {
+						$scope.fetch(nextSearch, 0);
+					} else {
+						$scope.loadPage(nextSearch, 0);
+					}
+					break;
+				case "q":
+					$scope.saveToLocalStorage();
+					break;
+				case "Q":
+					$scope.resetLocalStorage();
+					break;
+
+			}
+
+			$scope.safeApply();
+		});
+		window.scope = $scope;
+	}]);
+</script>
+
+<body ng-app="myApp">
+	<div ng-controller="MainController">
+		<div id="left">
+			<div id="header">
+				<span>
+					{{currentSearch}} (p.{{currentPid}}) | {{pages[currentSearch].subpages[0][0].id}}:{{pages[currentSearch].subpages[currentPid][24].id }} |
+					{{100-(100*(pages[currentSearch].subpages[currentPid][24].id-pages[currentSearch].history)/(pages[currentSearch].subpages[0][0].id-pages[currentSearch].history)).toFixed(0)}}%
+				</span>
+			</div>
+			<div id="grid">
+				<div ng-repeat="post in currentPage" class="{{$index == currentIndex ? 'selected' : null }} {{post.tags.includes('animated') ? 'animated' : null}} {{post.id <= pages[currentSearch].history ? 'old' : null}}">
+					<img ng-src="{{post.preview_url}}" data-index={{$index}} data-id="{{post.id}}" ng-mousedown="click($event,post,$index)">
+				</div>
+			</div>
+		</div>
+		<div id="right">
+			<div id="display" ng-switch="display.file_url.match(extensionRegex)[1]">
+				<img ng-switch-when="png|jpg|jpeg|gif" ng-switch-when-separator="|" ng-src="{{display.file_url}}" />
+				<video ng-switch-when="mp4|webm" ng-switch-when-separator="|" ng-src="{{display.file_url}}" autoplay muted controls loop></video>
+				<span ng-switch-default>{{display.file_url.match(extensionRegex)[1]}} not yet implemented</span>
+			</div>
+			<div id="footer">{{display.change + '000' | date}} {{display.tags}}</div>
+		</div>
+	</div>
+</body>
