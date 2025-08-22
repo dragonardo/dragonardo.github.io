@@ -161,7 +161,7 @@
 
 		$scope.pageSize = 25;
 		$scope.fetch = async (search, pid) => {
-			await $http.get(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=${$scope.pageSize}&tags=${search + $scope.filter}&pid=${pid}`)
+			await $http.get(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=${$scope.pageSize}&tags=${search + $scope.filter}&pid=${pid}&api_key=2403ef0f76d643ce43ea7dfa59027eee00375956934bac1f0a50f835c4f23b604b39cd5d3641914b83316ee84fa8830b489190ac7bd7855de197fc1d32642eb1&user_id=261728`)
 				.then(res => {
 					$scope.pages[search].subpages.push(res.data);
 					$scope.pages[search].history = Number(localStorage.getItem(search));
@@ -303,3 +303,4 @@
 	</div>
 
 </body>
+
